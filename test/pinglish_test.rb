@@ -202,6 +202,29 @@ class PinglishTest < MiniTest::Unit::TestCase
     assert_equal "ok", json["status"]
   end
 
+  def test_with_selective_checks
+    app = build_app do |ping|
+      ping.check(:db) { :ok }
+      ping.check(:foo) { :bar }
+      ping.check(:long, :timeout => 0.001) { sleep 0.003 }
+    end
+
+    session = Rack::Test::Session.new(app)
+    session.get "/_ping?checks=db,foo"
+
+    assert_equal 200, session.last_response.status
+    assert_equal "application/json; charset=UTF-8",
+      session.last_response.content_type
+
+    json = JSON.load(session.last_response.body)
+    assert json.key?("now")
+    assert_equal "ok", json["status"]
+    assert_equal false, json.key?("timeouts")
+    assert_equal false, json.key?("failures")
+    assert_equal 'ok', json['db']
+    assert_equal 'bar', json['foo']
+  end
+
   def test_check_without_name
     pinglish = Pinglish.new(FakeApp)
     check = pinglish.check { :ok }

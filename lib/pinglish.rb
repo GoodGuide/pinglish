@@ -45,7 +45,7 @@ class Pinglish
       timeout @max do
         results = {}
 
-        @checks.values.each do |check|
+        selected_checks(request.params).each do |check|
           begin
             timeout(check.timeout) do
               results[check.name] = check.call
@@ -92,7 +92,13 @@ class Pinglish
 
       now = Time.now.to_i.to_s
       [500, HEADERS, ['{"status":"failures","now":"' + now + '"}']]
+
+  def selected_checks(params)
+    if (selected = params['checks'])
+      selected = selected.split(',').map(&:to_sym)
+      return @checks.values_at(*selected).compact
     end
+    @checks.values
   end
 
   # Add a new check with optional `name`. A `:timeout` option can be
@@ -101,7 +107,7 @@ class Pinglish
   # will be replaced.
 
   def check(name = :default, options = nil, &block)
-    @checks[name] = Check.new(name, options, &block)
+    @checks[name.to_sym] = Check.new(name, options, &block)
   end
 
   # Does `value` represent a check failure? This default
