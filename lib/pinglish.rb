@@ -76,7 +76,7 @@ class Pinglish
             if key == :failures and value.is_a?(Exception)
               data[name] = {
                 state: :error,
-                exception: value.class,
+                exception: value.class.name,
                 message: value.message,
               }
             end
