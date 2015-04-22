@@ -37,25 +37,25 @@ class Pinglish
   # unless the request path matches `path`.
 
   def call(env)
-    request = Rack::Request.new env
+    request = Rack::Request.new(env)
 
-    return @app.call env unless request.path_info == @path
+    return @app.call(env) unless request.path_info == @path
 
     begin
       timeout @max do
-        results  = {}
+        results = {}
 
         @checks.values.each do |check|
           begin
-            timeout check.timeout do
+            timeout(check.timeout) do
               results[check.name] = check.call
             end
-          rescue StandardError => e
+          rescue => e
             results[check.name] = e
           end
         end
 
-        failed      = results.values.any? { |v| failure? v }
+        failed = results.values.any? { |v| failure? v }
         http_status = failed ? 503 : 200
         text_status = failed ? "failures" : "ok"
 
@@ -65,12 +65,10 @@ class Pinglish
         }
 
         results.each do |name, value|
-
           # The unnnamed/default check doesn't contribute data.
           next if name.nil?
 
-          if failure? value
-
+          if failure?(value)
             # If a check fails its name is added to a `failures` array.
             # If the check failed because it timed out, its name is
             # added to a `timeouts` array instead.
@@ -91,7 +89,6 @@ class Pinglish
       end
 
     rescue Exception => ex
-
       # Something catastrophic happened. We can't even run the checks
       # and render a JSON response. Fall back on a pre-rendered string
       # and interpolate the current epoch time.
