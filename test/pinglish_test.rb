@@ -80,7 +80,26 @@ class PinglishTest < MiniTest::Unit::TestCase
     json = JSON.load(session.last_response.body)
     assert json.key?("now")
     assert_equal "ok", json["status"]
+    assert_equal "yohoho", json["default"]
   end
+
+  def test_with_unnamed_check_that_raises
+    app = build_app do |ping|
+      ping.check { raise "nooooope" }
+    end
+
+    session = Rack::Test::Session.new(app)
+    session.get "/_ping"
+
+    assert_equal "application/json; charset=UTF-8",
+      session.last_response.content_type
+
+    json = JSON.load(session.last_response.body)
+    assert json.key?("now")
+    assert_equal 'failures', json["status"]
+    assert_equal ['default'], json["failures"]
+  end
+
 
   def test_with_check_that_raises
     app = build_app do |ping|

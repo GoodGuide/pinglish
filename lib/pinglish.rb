@@ -65,9 +65,6 @@ class Pinglish
         }
 
         results.each do |name, value|
-          # The unnnamed/default check doesn't contribute data.
-          next if name.nil?
-
           if failure?(value)
             # If a check fails its name is added to a `failures` array.
             # If the check failed because it timed out, its name is
@@ -103,7 +100,7 @@ class Pinglish
   # one second default. A previously added check with the same name
   # will be replaced.
 
-  def check(name = nil, options = nil, &block)
+  def check(name = :default, options = nil, &block)
     @checks[name] = Check.new(name, options, &block)
   end
 
