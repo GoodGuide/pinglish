@@ -73,12 +73,19 @@ class Pinglish
             key = timeout?(value) ? :timeouts : :failures
             (data[key] ||= []) << name
 
-          elsif value
+            if key == :failures and value.is_a?(Exception)
+              data[name] = {
+                state: :error,
+                exception: value.class,
+                message: value.message,
+              }
+            end
 
+          elsif value
             # If the check passed and returned a value, the stringified
             # version of the value is returned under the `name` key.
 
-            data[name] = value.to_s
+            data[name] = value
           end
         end
 
@@ -91,7 +98,21 @@ class Pinglish
       # and interpolate the current epoch time.
 
       now = Time.now.to_i.to_s
-      [500, HEADERS, ['{"status":"failures","now":"' + now + '"}']]
+
+      body = <<-EOF.gsub(/^ {6}/, '')
+      {
+        "status": "failures",
+        "now": "#{now}",
+        "error": {
+          "class": "#{ex.class.name}",
+          "message": "#{ex.message.tr('"', '')}"
+        }
+      }
+      EOF
+
+      [500, HEADERS, [body]]
+    end
+  end
 
   def selected_checks(params)
     if (selected = params['checks'])
