@@ -6,26 +6,24 @@ class PinglishTest < MiniTest::Unit::TestCase
 
   def build_app(*args, &block)
     Rack::Builder.new do |builder|
-      builder.use Pinglish, *args, &block
+      builder.map '/_ping' do
+        run Pinglish.new(*args, &block)
+      end
       builder.run FakeApp
     end
   end
 
-  def test_with_non_matching_request_path
-    app = build_app
-
-    session = Rack::Test::Session.new(app)
-    session.get "/something"
-    assert_equal 200, session.last_response.status
-    assert_equal "fake", session.last_response.body
+  def build_app_that_explodes(*args, &block)
+    Rack::Builder.new do |builder|
+      builder.map '/_ping' do
+        run Pinglish.new(*args, &block)
+      end
+      builder.run lambda { |env| raise "boom" }
+    end
   end
 
   def test_with_non_matching_request_path_and_exception
-    app = Rack::Builder.new do |builder|
-      builder.use Pinglish
-      builder.run lambda { |env| raise "boom" }
-    end
-
+    app = build_app_that_explodes
     session = Rack::Test::Session.new(app)
 
     assert_raises RuntimeError do
@@ -192,20 +190,6 @@ class PinglishTest < MiniTest::Unit::TestCase
 
     session = Rack::Test::Session.new(app)
     session.get "/_ping", {}, "SCRIPT_NAME" => "/myapp"
-    assert_equal 200, session.last_response.status
-    assert_equal "application/json; charset=UTF-8",
-      session.last_response.content_type
-
-    json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "ok", json["status"]
-  end
-
-  def test_with_custom_path
-    app = build_app(:path => "/_piiiiing")
-
-    session = Rack::Test::Session.new(app)
-    session.get "/_piiiiing"
     assert_equal 200, session.last_response.status
     assert_equal "application/json; charset=UTF-8",
       session.last_response.content_type

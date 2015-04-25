@@ -3,43 +3,31 @@ require "pinglish/check"
 require "rack/request"
 require "timeout"
 
-# This Rack middleware provides a "/_ping" endpoint for configurable
+# This Rack app provides an endpoint for configurable
 # system health checks. It's intended to be consumed by machines.
 
 class Pinglish
 
   # The HTTP headers sent for every response.
-
   HEADERS = {
     "Content-Type" => "application/json; charset=UTF-8"
   }
 
   # Raised when a check exceeds its timeout.
-
   class TooLong < RuntimeError; end
 
-  # Create a new instance of the middleware wrapping `app`, with an
-  # optional `:path` (default: `"/_ping"`), `:max` timeout in seconds
-  # (default: `29`), and behavior `block`.
-
-  def initialize(app, options = nil, &block)
+  # Create a new instance of the app, with optional parameter `:max` timeout in seconds (default: `29`); yields itself to an optional block for configuring checks.
+  def initialize(options=nil, &block)
     options ||= {}
 
-    @app    = app
     @checks = {}
     @max    = options[:max] || 29 # seconds
-    @path   = options[:path] || "/_ping"
 
     yield self if block_given?
   end
 
-  # Exercise the middleware, immediately delegating to the wrapped app
-  # unless the request path matches `path`.
-
   def call(env)
     request = Rack::Request.new(env)
-
-    return @app.call(env) unless request.path_info == @path
 
     begin
       timeout @max do
