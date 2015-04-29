@@ -1,12 +1,10 @@
 # Pinglish
 
-A simple Rack middleware for checking application health. Pinglish
-exposes a `/_ping` resource via HTTP `GET`, returning JSON that
-conforms to the spec below.
+A simple Rack app for checking application health. Pinglish responds to `GET` requests, returning JSON that conforms to the spec below.
 
 ## The Spec
 
-0. The application __must__ respond to `GET /_ping` as an HTTP request.
+0. The application __must__ respond to `GET /` as an HTTP request.
 
 0. The request handler __should__ check the health of all services the
   application depends on, answering questions like, "Can I query
@@ -73,13 +71,12 @@ conforms to the spec below.
 }
 ```
 
-## The Middleware
+## Configuring Checks
 
 ```ruby
 require "pinglish"
 
-use Pinglish do |ping|
-
+pinglish = Pinglish.new do |ping|
   # A single unnamed check is the simplest possible way to use
   # Pinglish, and you'll probably never want combine it with other
   # named checks. An unnamed check contributes to overall success or
@@ -116,4 +113,21 @@ use Pinglish do |ping|
     false
   end
 end
+```
+
+## Usage
+
+Use in a Rack app is easy, just mount the app within a `map` block.
+
+```ruby
+# config.ru
+map '/_ping' do
+  run Pinglish.new { |ping|
+    ping.check do
+      App.healthy?
+    end
+  }
+end
+
+run App.new
 ```
