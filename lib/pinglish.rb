@@ -1,7 +1,7 @@
-require "json"
-require "pinglish/check"
-require "rack/request"
-require "timeout"
+require 'json'
+require 'pinglish/check'
+require 'rack/request'
+require 'timeout'
 
 # This Rack app provides an endpoint for configurable
 # system health checks. It's intended to be consumed by machines.

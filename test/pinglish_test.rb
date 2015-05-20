@@ -1,8 +1,8 @@
-require "helper"
-require "rack/test"
+require 'helper'
+require 'rack/test'
 
 class PinglishTest < MiniTest::Unit::TestCase
-  FakeApp = lambda { |env| [200, {}, ["fake"]] }
+  FakeApp = lambda { |env| [200, {}, ['fake']] }
 
   def build_app(*args, &block)
     Rack::Builder.new do |builder|
@@ -18,7 +18,7 @@ class PinglishTest < MiniTest::Unit::TestCase
       builder.map '/_ping' do
         run Pinglish.new(*args, &block)
       end
-      builder.run lambda { |env| raise "boom" }
+      builder.run lambda { |env| raise 'boom' }
     end
   end
 
@@ -27,7 +27,7 @@ class PinglishTest < MiniTest::Unit::TestCase
     session = Rack::Test::Session.new(app)
 
     assert_raises RuntimeError do
-      session.get "/something"
+      session.get '/something'
     end
   end
 
@@ -35,14 +35,14 @@ class PinglishTest < MiniTest::Unit::TestCase
     app = build_app
 
     session = Rack::Test::Session.new(app)
-    session.get "/_ping"
+    session.get '/_ping'
     assert_equal 200, session.last_response.status
-    assert_equal "application/json; charset=UTF-8",
+    assert_equal 'application/json; charset=UTF-8',
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "ok", json["status"]
+    assert json.key?('now')
+    assert_equal 'ok', json['status']
   end
 
   def test_with_good_check
@@ -52,16 +52,16 @@ class PinglishTest < MiniTest::Unit::TestCase
     end
 
     session = Rack::Test::Session.new(app)
-    session.get "/_ping"
+    session.get '/_ping'
 
-    assert_equal "application/json; charset=UTF-8",
+    assert_equal 'application/json; charset=UTF-8',
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "ok", json["status"]
-    assert_equal "up_and_at_em", json["db"]
-    assert_equal "pushin_and_poppin", json["queue"]
+    assert json.key?('now')
+    assert_equal 'ok', json['status']
+    assert_equal 'up_and_at_em', json['db']
+    assert_equal 'pushin_and_poppin', json['queue']
   end
 
   def test_with_unnamed_check
@@ -70,62 +70,62 @@ class PinglishTest < MiniTest::Unit::TestCase
     end
 
     session = Rack::Test::Session.new(app)
-    session.get "/_ping"
+    session.get '/_ping'
 
-    assert_equal "application/json; charset=UTF-8",
+    assert_equal 'application/json; charset=UTF-8',
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "ok", json["status"]
-    assert_equal "yohoho", json["default"]
+    assert json.key?('now')
+    assert_equal 'ok', json['status']
+    assert_equal 'yohoho', json['default']
   end
 
   def test_with_unnamed_check_that_raises
     app = build_app do |ping|
-      ping.check { raise "nooooope" }
+      ping.check { raise 'nooooope' }
     end
 
     session = Rack::Test::Session.new(app)
-    session.get "/_ping"
+    session.get '/_ping'
 
-    assert_equal "application/json; charset=UTF-8",
+    assert_equal 'application/json; charset=UTF-8',
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal 'failures', json["status"]
-    assert_equal ['default'], json["failures"]
+    assert json.key?('now')
+    assert_equal 'failures', json['status']
+    assert_equal ['default'], json['failures']
     assert_equal({
       'state' => 'error',
       'exception' => 'RuntimeError',
       'message' => 'nooooope'
-    }, json["default"])
+    }, json['default'])
   end
 
 
   def test_with_check_that_raises
     app = build_app do |ping|
       ping.check(:db) { :ok }
-      ping.check(:raise) { raise "nooooope" }
+      ping.check(:raise) { raise 'nooooope' }
     end
 
     session = Rack::Test::Session.new(app)
-    session.get "/_ping"
+    session.get '/_ping'
 
     assert_equal 503, session.last_response.status
-    assert_equal "application/json; charset=UTF-8",
+    assert_equal 'application/json; charset=UTF-8',
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "failures", json["status"]
-    assert_equal ['raise'], json["failures"]
+    assert json.key?('now')
+    assert_equal 'failures', json['status']
+    assert_equal ['raise'], json['failures']
     assert_equal({
       'state' => 'error',
       'exception' => 'RuntimeError',
       'message' => 'nooooope'
-    }, json["raise"])
+    }, json['raise'])
   end
 
   def test_with_check_that_returns_false
@@ -135,17 +135,17 @@ class PinglishTest < MiniTest::Unit::TestCase
     end
 
     session = Rack::Test::Session.new(app)
-    session.get "/_ping"
+    session.get '/_ping'
 
     assert_equal 503, session.last_response.status
-    assert_equal "application/json; charset=UTF-8",
+    assert_equal 'application/json; charset=UTF-8',
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "failures", json["status"]
-    assert_equal ["fail"], json["failures"]
-    assert_equal false, json.key?("fail")
+    assert json.key?('now')
+    assert_equal 'failures', json['status']
+    assert_equal ['fail'], json['failures']
+    assert_equal false, json.key?('fail')
   end
 
   def test_with_check_that_times_out
@@ -155,7 +155,7 @@ class PinglishTest < MiniTest::Unit::TestCase
     end
 
     session = Rack::Test::Session.new(app)
-    session.get "/_ping"
+    session.get '/_ping'
 
     assert_equal 503, session.last_response.status
     assert_equal "application/json; charset=UTF-8",
@@ -180,23 +180,23 @@ class PinglishTest < MiniTest::Unit::TestCase
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "failures", json["status"]
-    assert_equal ['long'], json["timeouts"]
+    assert json.key?('now')
+    assert_equal 'failures', json['status']
+    assert_equal ['long'], json['timeouts']
   end
 
   def test_with_script_name
     app = build_app
 
     session = Rack::Test::Session.new(app)
-    session.get "/_ping", {}, "SCRIPT_NAME" => "/myapp"
+    session.get '/_ping', {}, 'SCRIPT_NAME' => '/myapp'
     assert_equal 200, session.last_response.status
-    assert_equal "application/json; charset=UTF-8",
+    assert_equal 'application/json; charset=UTF-8',
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "ok", json["status"]
+    assert json.key?('now')
+    assert_equal 'ok', json['status']
   end
 
   def test_with_selective_checks
@@ -207,17 +207,17 @@ class PinglishTest < MiniTest::Unit::TestCase
     end
 
     session = Rack::Test::Session.new(app)
-    session.get "/_ping?checks=db,foo"
+    session.get '/_ping?checks=db,foo'
 
     assert_equal 200, session.last_response.status
-    assert_equal "application/json; charset=UTF-8",
+    assert_equal 'application/json; charset=UTF-8',
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "ok", json["status"]
-    assert_equal false, json.key?("timeouts")
-    assert_equal false, json.key?("failures")
+    assert json.key?('now')
+    assert_equal 'ok', json['status']
+    assert_equal false, json.key?('timeouts')
+    assert_equal false, json.key?('failures')
     assert_equal 'ok', json['db']
     assert_equal 'bar', json['foo']
   end
@@ -267,19 +267,19 @@ class PinglishTest < MiniTest::Unit::TestCase
     end
 
     session = Rack::Test::Session.new(app)
-    session.get "/_ping"
+    session.get '/_ping'
 
     assert_equal 200, session.last_response.status
-    assert_equal "application/json; charset=UTF-8",
+    assert_equal 'application/json; charset=UTF-8',
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "ok", json["status"]
-    assert_equal false, json.key?("timeouts")
-    assert_equal false, json.key?("failures")
+    assert json.key?('now')
+    assert_equal 'ok', json['status']
+    assert_equal false, json.key?('timeouts')
+    assert_equal false, json.key?('failures')
     assert_equal 'ok', json['db']
-    assert_equal false, json.key?("intense")
+    assert_equal false, json.key?('intense')
   end
 
   def test_enabled_by_default_selected
@@ -289,18 +289,18 @@ class PinglishTest < MiniTest::Unit::TestCase
     end
 
     session = Rack::Test::Session.new(app)
-    session.get "/_ping?checks=db,intense"
+    session.get '/_ping?checks=db,intense'
 
     assert_equal 200, session.last_response.status
-    assert_equal "application/json; charset=UTF-8",
+    assert_equal 'application/json; charset=UTF-8',
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "ok", json["status"]
-    assert_equal false, json.key?("timeouts")
-    assert_equal false, json.key?("failures")
+    assert json.key?('now')
+    assert_equal 'ok', json['status']
+    assert_equal false, json.key?('timeouts')
+    assert_equal false, json.key?('failures')
     assert_equal 'ok', json['db']
-    assert_equal 'ok', json["intense"]
+    assert_equal 'ok', json['intense']
   end
 end
