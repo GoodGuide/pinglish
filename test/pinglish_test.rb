@@ -151,7 +151,7 @@ class PinglishTest < MiniTest::Unit::TestCase
   def test_with_check_that_times_out
     app = build_app do |ping|
       ping.check(:db) { :ok }
-      ping.check(:long, :timeout => 0.001) { sleep 0.003 }
+      ping.check(:long, :timeout => TIME_UNIT) { sleep TIME_UNIT * 5 }
     end
 
     session = Rack::Test::Session.new(app)
@@ -168,8 +168,8 @@ class PinglishTest < MiniTest::Unit::TestCase
   end
 
   def test_with_checks_taking_more_than_max
-    app = build_app(:max => 0.001) do |ping|
-      ping.check(:long) { sleep 0.003 }
+    app = build_app(:max => TIME_UNIT) do |ping|
+      ping.check(:long) { sleep TIME_UNIT * 5 }
     end
 
     session = Rack::Test::Session.new(app)
