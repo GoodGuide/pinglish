@@ -104,6 +104,13 @@ pinglish = Pinglish.new do |ping|
   ping.check :false_fails do
     false
   end
+
+  # All checks run, by default. To create a check that is only run when
+  # requested, provide `false` for the `:enabled_by_default` option. Checks like
+  # this can be requested using the `checks` query parameter (see below).
+  ping.check :cpu_intensive_check, enabled_by_default: false do
+    App.check_all_the_things
+  end
 end
 ```
 

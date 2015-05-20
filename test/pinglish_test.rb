@@ -259,4 +259,48 @@ class PinglishTest < MiniTest::Unit::TestCase
     assert pinglish.timeout?(Pinglish::TooLong.new)
     refute pinglish.timeout?(Exception.new)
   end
+
+  def test_enabled_by_default_false
+    app = build_app do |ping|
+      ping.check(:db) { :ok }
+      ping.check(:intense, enabled_by_default: false) { :ok }
+    end
+
+    session = Rack::Test::Session.new(app)
+    session.get "/_ping"
+
+    assert_equal 200, session.last_response.status
+    assert_equal "application/json; charset=UTF-8",
+      session.last_response.content_type
+
+    json = JSON.load(session.last_response.body)
+    assert json.key?("now")
+    assert_equal "ok", json["status"]
+    assert_equal false, json.key?("timeouts")
+    assert_equal false, json.key?("failures")
+    assert_equal 'ok', json['db']
+    assert_equal false, json.key?("intense")
+  end
+
+  def test_enabled_by_default_selected
+    app = build_app do |ping|
+      ping.check(:db) { :ok }
+      ping.check(:intense, enabled_by_default: false) { :ok }
+    end
+
+    session = Rack::Test::Session.new(app)
+    session.get "/_ping?checks=db,intense"
+
+    assert_equal 200, session.last_response.status
+    assert_equal "application/json; charset=UTF-8",
+      session.last_response.content_type
+
+    json = JSON.load(session.last_response.body)
+    assert json.key?("now")
+    assert_equal "ok", json["status"]
+    assert_equal false, json.key?("timeouts")
+    assert_equal false, json.key?("failures")
+    assert_equal 'ok', json['db']
+    assert_equal 'ok', json["intense"]
+  end
 end

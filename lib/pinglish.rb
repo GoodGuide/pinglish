@@ -107,7 +107,7 @@ class Pinglish
       selected = selected.split(',').map(&:to_sym)
       return @checks.values_at(*selected).compact
     end
-    @checks.values
+    @checks.values.select(&:enabled_by_default)
   end
 
   # Add a new check with optional `name`. A `:timeout` option can be
