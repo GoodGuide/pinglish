@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |gem|
   gem.name          = 'goodguide-pinglish'
-  gem.version       = '1.1.0'
+  gem.version       = '1.2.0'
   gem.authors       = ['John Barnette', 'Will Farrington', 'Ryan Long']
   gem.email         = ['jbarnette@github.com', 'wfarr@github.com', 'ryan@rtlong.com']
   gem.description   = 'A simple Rack middleware for checking app health.'
