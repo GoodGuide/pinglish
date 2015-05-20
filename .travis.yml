@@ -1,0 +1,25 @@
+language: ruby
+rvm:
+  - 2.2.0
+  - 2.1.0
+  - 2.0.0
+  - jruby-20mode
+  - rbx-2
+  - ruby-head
+  - jruby-head
+before_install: gem install bundler
+
+bundler_args: --jobs=4 --retry=5
+
+deploy:
+  provider: rubygems
+  api_key:
+    secure: "qiQxYOFzzLDzrgovDfF+1QnpGA4cNrCbNJsQJvaQfEyAglbSdSTPHcz0jDp9gYcPrJiz/YytFhoRgsrp2tKduu32mr+fjuQdXuZZ/xAiJ9BQlxvwuB8zds7Nbqgr5XuQkJFy11yZvQLDwaxeuErrmx7KusFUPV8ZksKnZjU+drc="
+  gem: goodguide-pinglish
+  on:
+    repo: GoodGuide/pinglish
+    tags: true
+
+notifications:
+  slack:
+    secure: "uFaT+WAFDeXr6BCaNXExQx0Iqh7La4E9rG9NctqP3sP2EQGzFMndTLrnLJcQQm8jPHlczqSkL/Ct9BMUEYOt7C3B3d86rZ0ml21IYFjZD8wt3TEorVOh1XaE2WoEtpn587q7AbSWoVWcl5/66c8dlot8/GGNORkl/gjU9kIgDFY="

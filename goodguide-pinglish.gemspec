@@ -14,6 +14,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
 
   gem.add_dependency "rack"
+  gem.add_development_dependency 'rake', '~> 10.4.0'
   gem.add_development_dependency "minitest", "~> 4.5"
   gem.add_development_dependency "rack-test", "~> 0.6"
 end
