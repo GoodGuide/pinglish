@@ -11,9 +11,6 @@ A simple Rack app for checking application health. Pinglish responds to `GET` re
   agains my MySQL database," "Can I create/read keys in Redis," or "How
   many docs are in my ElasticSearch index?"
 
-0. The response __must__ return within 29 seconds. This is one second
-   less than the default timeout for many monitoring services.
-
 0. The response __must__ return an `HTTP 200 OK` status code if all
    health checks pass.
 

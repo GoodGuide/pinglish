@@ -157,26 +157,8 @@ class PinglishTest < MiniTest::Unit::TestCase
     session = Rack::Test::Session.new(app)
     session.get '/_ping'
 
-    assert_equal 503, session.last_response.status
-    assert_equal "application/json; charset=UTF-8",
-      session.last_response.content_type
-
-    json = JSON.load(session.last_response.body)
-    assert json.key?("now")
-    assert_equal "failures", json["status"]
-    assert_equal ["long"], json["timeouts"]
-  end
-
-  def test_with_checks_taking_more_than_max
-    app = build_app(:max => TIME_UNIT) do |ping|
-      ping.check(:long) { sleep TIME_UNIT * 5 }
-    end
-
-    session = Rack::Test::Session.new(app)
-    session.get "/_ping"
-
-    assert_equal 503, session.last_response.status
-    assert_equal "application/json; charset=UTF-8",
+    assert_equal 503, session.last_response.status, session.last_response.body
+    assert_equal 'application/json; charset=UTF-8',
       session.last_response.content_type
 
     json = JSON.load(session.last_response.body)
@@ -245,19 +227,13 @@ class PinglishTest < MiniTest::Unit::TestCase
     refute pinglish.failure?(:ok)
   end
 
-  def test_timeout
-    pinglish = Pinglish.new(FakeApp)
-
-    assert_raises Pinglish::TooLong do
-      pinglish.timeout(0.001) { sleep 0.003 }
-    end
-  end
-
   def test_timeout_boolean
     pinglish = Pinglish.new(FakeApp)
 
-    assert pinglish.timeout?(Pinglish::TooLong.new)
-    refute pinglish.timeout?(Exception.new)
+    assert pinglish.timeout?(:timeout)
+    refute pinglish.timeout?(:foo)
+    refute pinglish.timeout?(false)
+    refute pinglish.timeout?(StandardError.new)
   end
 
   def test_enabled_by_default_false

@@ -1,7 +1,6 @@
 require 'json'
 require 'pinglish/check'
 require 'rack/request'
-require 'timeout'
 
 # This Rack app provides an endpoint for configurable
 # system health checks. It's intended to be consumed by machines.
@@ -10,96 +9,97 @@ class Pinglish
 
   # The HTTP headers sent for every response.
   HEADERS = {
-    "Content-Type" => "application/json; charset=UTF-8"
+    'Content-Type' => 'application/json; charset=UTF-8'
   }
 
-  # Raised when a check exceeds its timeout.
-  class TooLong < RuntimeError; end
-
-  # Create a new instance of the app, with optional parameter `:max` timeout in seconds (default: `29`); yields itself to an optional block for configuring checks.
+  # Create a new instance of the app; yields itself to an optional block for configuring checks.
   def initialize(options=nil, &block)
     options ||= {}
 
     @checks = {}
-    @max    = options[:max] || 29 # seconds
 
-    yield self if block_given?
+    yield(self) if block_given?
   end
 
   def call(env)
     request = Rack::Request.new(env)
+    results = {}
 
-    begin
-      timeout @max do
-        results = {}
-
-        selected_checks(request.params).each do |check|
-          begin
-            timeout(check.timeout) do
-              results[check.name] = check.call
-            end
-          rescue => e
-            results[check.name] = e
-          end
-        end
-
-        failed = results.values.any? { |v| failure? v }
-        http_status = failed ? 503 : 200
-        text_status = failed ? "failures" : "ok"
-
-        data = {
-          :now    => Time.now.to_i.to_s,
-          :status => text_status
-        }
-
-        results.each do |name, value|
-          if failure?(value)
-            # If a check fails its name is added to a `failures` array.
-            # If the check failed because it timed out, its name is
-            # added to a `timeouts` array instead.
-
-            key = timeout?(value) ? :timeouts : :failures
-            (data[key] ||= []) << name
-
-            if key == :failures and value.is_a?(Exception)
-              data[name] = {
-                state: :error,
-                exception: value.class.name,
-                message: value.message,
-              }
-            end
-
-          elsif value
-            # If the check passed and returned a value, the stringified
-            # version of the value is returned under the `name` key.
-
-            data[name] = value
-          end
-        end
-
-        [http_status, HEADERS, [JSON.generate(data)]]
+    selected_checks(request.params).each do |check|
+      check_thread = Thread.new do
+        check.call
       end
+      sleep_thread = Thread.new do
+        sleep check.timeout
+        check_thread.kill
+        :timeout
+      end
+      begin
+        val = check_thread.value
+      rescue => e
+        val = e
+      end
+      sleep_thread.kill
+      results[check.name] = sleep_thread.value || val
+    end
 
-    rescue Exception => ex
-      # Something catastrophic happened. We can't even run the checks
-      # and render a JSON response. Fall back on a pre-rendered string
-      # and interpolate the current epoch time.
+    failed = results.values.any? { |v| failure?(v) }
+    http_status = failed ? 503 : 200
+    text_status = failed ? 'failures' : 'ok'
 
-      now = Time.now.to_i.to_s
+    data = {
+      now: Time.now.to_i,
+      status: text_status,
+    }
 
-      body = <<-EOF.gsub(/^ {6}/, '')
+    results.each do |name, value|
+      if timeout?(value)
+        # If the check failed because it timed out, its name is
+        # added to a `timeouts` array instead.
+        (data[:timeouts] ||= []) << name
+
+      elsif failure?(value)
+        # If a check fails its name is added to a `failures` array.
+
+        (data[:failures] ||= []) << name
+
+        if value.is_a?(Exception)
+          data[name] = {
+            state: :error,
+            exception: value.class.name,
+            message: value.message,
+          }
+        end
+
+      elsif value
+        # If the check passed and returned a value, the stringified
+        # version of the value is returned under the `name` key.
+
+        data[name] = value
+      end
+    end
+
+    [http_status, HEADERS, [JSON.generate(data)]]
+
+  rescue Exception => ex
+    # Something catastrophic happened. We can't even run the checks
+    # and render a JSON response. Fall back on a pre-rendered string
+    # and interpolate the current epoch time.
+
+    now = Time.now.to_i
+
+    body = <<-EOF.gsub(/^ {6}/, '')
       {
         "status": "failures",
-        "now": "#{now}",
+        "now": #{now},
         "error": {
           "class": "#{ex.class.name}",
           "message": "#{ex.message.tr('"', '')}"
         }
       }
-      EOF
+    EOF
 
-      [500, HEADERS, [body]]
-    end
+    [500, HEADERS, [body]]
   end
 
   def selected_checks(params)
@@ -124,23 +124,10 @@ class Pinglish
   # Subclasses can override this method for different behavior.
 
   def failure?(value)
-    value.is_a?(Exception) || value == false
+    value.is_a?(Exception) || value == false || timeout?(value)
   end
-
-  # Raise Pinglish::TooLong after `seconds` has elapsed. This default
-  # implementation uses Ruby's built-in Timeout class. Subclasses can
-  # override this method for different behavior, but any new
-  # implementation must raise Pinglish::TooLong when the timeout is
-  # exceeded or override `timeout?` appropriately.
-
-  def timeout(seconds, &block)
-    Timeout.timeout seconds, Pinglish::TooLong, &block
-  end
-
-  # Does `value` represent a check timeout? Returns `true` for any
-  # value that is an instance of Pinglish::TooLong.
 
   def timeout?(value)
-    value.is_a? Pinglish::TooLong
+    value == :timeout
   end
 end
