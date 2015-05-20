@@ -50,23 +50,18 @@ A simple Rack app for checking application health. Pinglish responds to `GET` re
 
 ```javascript
 {
-
   // These two keys will always exist.
-
   "now": "1359055102",
   "status": "failures",
 
   // This key may only exist when a named check has failed.
-
   "failures": ["db"],
 
   // This key may only exist when a named check exceeds its timeout.
-
   "timeouts": ["really-long-check"],
 
   // Keys like this may exist to provide extra information about
   // healthy services, like the number of objects in an S3 bucket.
-
   "s3": "127"
 }
 ```
@@ -77,29 +72,26 @@ A simple Rack app for checking application health. Pinglish responds to `GET` re
 require "pinglish"
 
 pinglish = Pinglish.new do |ping|
-  # A single unnamed check is the simplest possible way to use
-  # Pinglish, and you'll probably never want combine it with other
-  # named checks. An unnamed check contributes to overall success or
-  # failure, but never adds additional data to the response.
-
+  # A single unnamed check is the simplest possible way to use Pinglish, and
+  # you'll probably never want combine it with other named checks. An unnamed
+  # check contributes to overall success or failure, but never adds additional
+  # data to the response.
   ping.check do
     App.healthy?
   end
 
-  # A named check like this can provide useful summary information
-  # when it succeeds. In this case, a top-level "db" key will appear
-  # in the response containing the number of items in the database. If
-  # a check returns nil, no key will be added to the response.
-
+  # A named check like this can provide useful summary information when it
+  # succeeds. In this case, a top-level "db" key will appear in the response
+  # containing the number of items in the database. If a check returns nil, no
+  # key will be added to the response.
   ping.check :db do
     App.db.items.size
   end
 
-  # By default, checks time out after one second. You can override
-  # this with the :timeout option, but be aware that no combination of
-  # checks is ever allowed to exceed the overall 29 second limit.
-
-  ping.check :long, :timeout => 5 do
+  # By default, checks time out after one second. You can override this with the
+  # :timeout option, but be aware that no combination of checks is ever allowed
+  # to exceed the overall 29 second limit.
+  ping.check :long, timeout: 5 do
     App.dawdle
   end
 
@@ -131,3 +123,20 @@ end
 
 run App.new
 ```
+
+Now requests to `GET /_ping` will return this response:
+
+```json
+{
+  "now": "1359055102",
+  "status": "ok"
+}
+```
+
+You can supply an optional `checks` query parameter (comma separated names) to select which checks to run. This can be used to run just a subset, or to select checks which have `enabled_by_default` set to `false`.
+
+```
+GET /_ping?checks=foo,bar,default
+```
+
+(In this case, an unnamed check is referred to as `default`, and is not treated specially -- you must specify `default` if you pass this parameter and want it to run.)

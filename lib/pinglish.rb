@@ -115,7 +115,7 @@ class Pinglish
   # one second default. A previously added check with the same name
   # will be replaced.
 
-  def check(name = :default, options = nil, &block)
+  def check(name=:default, options={}, &block)
     @checks[name.to_sym] = Check.new(name, options, &block)
   end
 
