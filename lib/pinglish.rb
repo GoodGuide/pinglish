@@ -69,6 +69,9 @@ class Pinglish
             exception: value.class.name,
             message: value.message,
           }
+          if value.respond_to?(:as_json)
+            data[name].update(value.as_json)
+          end
         end
 
       elsif value
